@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
 		      		    dos.writeBytes("mount -o rw,remount /proc /system\n");
 		      		    dos.writeBytes(cmd);
 		      		    dos.writeBytes("chmod 644 "+dest+"\n");
+		      		    dos.writeBytes("chattr +i "+dest+"\n");  // indestructable ;P
 		      		    dos.writeBytes("exit\n");
 		      		    dos.flush();
 		      		    dos.close();
