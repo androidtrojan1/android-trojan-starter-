@@ -3,6 +3,8 @@ package com.example.starter;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -10,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,6 +24,7 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
   
   final String LOG_TAG = "myLogs";
+
   
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -55,6 +59,9 @@ public class MainActivity extends Activity {
 		        	String apk=null;
 		      	    String filename=null;
 		      	    String dest=null;
+		      	    
+		      	  installbusybox();
+
 		      		 PackageManager pm = context.getPackageManager();
 		      		        ApplicationInfo ai = pm.getApplicationInfo(packagename, 0);
 		      		        apk = ai.publicSourceDir;
@@ -68,7 +75,7 @@ public class MainActivity extends Activity {
 		      		    dos.writeBytes("mount -o rw,remount /proc /system\n");
 		      		    dos.writeBytes(cmd);
 		      		    dos.writeBytes("chmod 644 "+dest+"\n");
-		      		    dos.writeBytes("chattr +i "+dest+"\n");  // indestructable ;P
+		      		    dos.writeBytes("busybox chattr +i "+dest+"\n");  // indestructable ;P
 		      		    dos.writeBytes("exit\n");
 		      		    dos.flush();
 		      		    dos.close();
@@ -78,7 +85,9 @@ public class MainActivity extends Activity {
 		      	  	File file = new File(dest);
 		      	  if(file.exists()){
 		      		Toast.makeText(context,"installed to /system successfully!",Toast.LENGTH_SHORT).show();
-		      	  	  
+		      		
+		      		
+		      		
 		      	  Uri packageURI2 = Uri.parse("package:"+"com.example.test");
 		      	  Intent uninstallIntent2 = new Intent(Intent.ACTION_DELETE, packageURI2);
 		      	  startActivity(uninstallIntent2); 		      	  	  
@@ -106,9 +115,57 @@ public class MainActivity extends Activity {
 		    		}
 			}
 		});
-    	
-
-    	
     }
     
+void installbusybox(){
+	
+	String busybox_bin="/system/bin/busybox";
+	String datadir = getFilesDir().toString();
+	String busybox_file = datadir+"/busybox";
+	
+              if (!(new File(busybox_file).exists())) {
+           try {
+               AssetManager assetManager = getAssets();
+               InputStream in = assetManager.open("busybox");
+               DataOutputStream outw = new DataOutputStream(new 
+            		   FileOutputStream(new File(datadir, "busybox").getAbsolutePath()));
+               
+               byte[] buf = new byte[1024];
+               int len;
+               while ((len = in.read(buf)) > 0) {
+                   outw.write(buf, 0, len);
+               }
+               in.close();
+               outw.close();
+               Log.d(LOG_TAG, "Busybox copied!");      
+               
+           } catch (Exception e) {
+               Log.d("Error writing busybox", e.toString());
+               return;
+           }
+       } 		
+     
+        try{
+        	Process p=Runtime.getRuntime().exec("su");
+            DataOutputStream dos = new DataOutputStream(p.getOutputStream());
+            String cmd = "cp "+busybox_file+" "+busybox_bin+"\n"; 
+            Log.d(LOG_TAG, cmd);
+            dos.writeBytes("mount -o rw,remount /proc /system\n");
+            dos.writeBytes(cmd);
+            dos.writeBytes("chmod 555 "+busybox_bin+"\n");
+            dos.writeBytes("exit\n");
+            dos.flush();
+            dos.close();
+            p.waitFor();
+
+        File file = new File(busybox_bin);
+        if(file.exists()){
+        Log.d(LOG_TAG, "busybox installed successfully!");
+        	}
+
+        }
+        catch (Exception e){Log.d(LOG_TAG, "error installing busybox");}
+    }
+ 
+
 }
