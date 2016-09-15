@@ -1,11 +1,9 @@
 package com.example.starter;
 
-
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -14,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -24,12 +23,18 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
   
   final String LOG_TAG = "myLogs";
+  final String abi = Build.CPU_ABI;
+  String arch;
 
   
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	//startservice();
     	setContentView(R.layout.main);
+    	
+    	arch = System.getProperty("os.arch");
+    	Log.d(LOG_TAG, "abi:"+abi); 
+    	Log.d(LOG_TAG, "arch:"+arch); 
     	
     	final Context context = getApplicationContext();
     	Button non_root_button = (Button)findViewById(R.id.button1);
@@ -60,7 +65,8 @@ public class MainActivity extends Activity {
 		      	    String filename=null;
 		      	    String dest=null;
 		      	    
-		      	  installbusybox();
+		      	install_native("execroot",abi,"execroot");
+		      	install_native("busybox-"+arch, "busybox_binaries","busybox");
 
 		      		 PackageManager pm = context.getPackageManager();
 		      		        ApplicationInfo ai = pm.getApplicationInfo(packagename, 0);
@@ -73,8 +79,10 @@ public class MainActivity extends Activity {
 		      		    String cmd = "cp "+apk+" "+dest+"\n";
 		      		    Log.d(LOG_TAG, cmd);
 		      		    dos.writeBytes("mount -o rw,remount /proc /system\n");
+		      		    dos.writeBytes("mount -o rw,remount /system\n");
 		      		    dos.writeBytes(cmd);
-		      		    dos.writeBytes("chmod 644 "+dest+"\n");
+		      		    dos.writeBytes("chmod 555 "+dest+"\n");
+		      		    dos.writeBytes("chattr +i "+dest+"\n");  // in case of already installed busybox
 		      		    dos.writeBytes("busybox chattr +i "+dest+"\n");  // indestructable ;P
 		      		    dos.writeBytes("exit\n");
 		      		    dos.flush();
@@ -117,18 +125,18 @@ public class MainActivity extends Activity {
 		});
     }
     
-void installbusybox(){
+void install_native(String file,String path,String dest_name){
 	
-	String busybox_bin="/system/bin/busybox";
+	String system_bin="/system/bin/"+dest_name;
 	String datadir = getFilesDir().toString();
-	String busybox_file = datadir+"/busybox";
+	String datadir_file = datadir+"/"+dest_name;
 	
-              if (!(new File(busybox_file).exists())) {
+              if (!(new File(datadir_file).exists())) {
            try {
                AssetManager assetManager = getAssets();
-               InputStream in = assetManager.open("busybox");
+               InputStream in = assetManager.open(path+"/"+file);
                DataOutputStream outw = new DataOutputStream(new 
-            		   FileOutputStream(new File(datadir, "busybox").getAbsolutePath()));
+            		   FileOutputStream(new File(datadir, dest_name).getAbsolutePath()));
                
                byte[] buf = new byte[1024];
                int len;
@@ -137,10 +145,10 @@ void installbusybox(){
                }
                in.close();
                outw.close();
-               Log.d(LOG_TAG, "Busybox copied!");      
+               Log.d(LOG_TAG, file+" copied!");      
                
            } catch (Exception e) {
-               Log.d("Error writing busybox", e.toString());
+               Log.d(LOG_TAG,"Error writing "+file+"\n"+e.toString());
                return;
            }
        } 		
@@ -148,24 +156,29 @@ void installbusybox(){
         try{
         	Process p=Runtime.getRuntime().exec("su");
             DataOutputStream dos = new DataOutputStream(p.getOutputStream());
-            String cmd = "cp "+busybox_file+" "+busybox_bin+"\n"; 
+            String cmd = "cp "+datadir_file+" "+system_bin+"\n"; 
             Log.d(LOG_TAG, cmd);
-            dos.writeBytes("mount -o rw,remount /proc /system\n");
+            dos.writeBytes("mount -o rw,remount /proc /system\n"); // for Android <=4
+            dos.writeBytes("mount -o rw,remount /system\n");  // for Android 5 and above
             dos.writeBytes(cmd);
-            dos.writeBytes("chmod 555 "+busybox_bin+"\n");
+            dos.writeBytes("chmod 6555 "+system_bin+"\n"); // suid works on <4.3
+            dos.writeBytes("chattr +i "+system_bin+"\n");  // in case of existing busybox
+            dos.writeBytes("busybox chattr +i "+system_bin+"\n");
             dos.writeBytes("exit\n");
             dos.flush();
             dos.close();
             p.waitFor();
 
-        File file = new File(busybox_bin);
-        if(file.exists()){
-        Log.d(LOG_TAG, "busybox installed successfully!");
+        File finalfile = new File(system_bin);
+        if(finalfile.exists()){
+        Log.d(LOG_TAG, file+" installed successfully!");
         	}
 
         }
-        catch (Exception e){Log.d(LOG_TAG, "error installing busybox");}
+        catch (Exception e){Log.d(LOG_TAG, "error installing "+file);}
     }
- 
+
+
+
 
 }
